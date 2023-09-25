@@ -1,15 +1,18 @@
 from bs4 import BeautifulSoup
+import re
 import requests
 import sqlite3
 
 basestats_URL = "https://serenesforest.net/awakening/characters/base-stats/main-story/"
 basegrowths_URL = "https://serenesforest.net/awakening/characters/growth-rates/base/"
+class_URL = "https://serenesforest.net/awakening/characters/class-sets/"
 
 con = sqlite3.connect("awakening.db")
 cur = con.cursor()
 
 
 def schema():
+    # TODO: Refactor into one string?
     cur.execute(
         """
             CREATE TABLE IF NOT EXISTS
@@ -62,6 +65,15 @@ def schema():
         """
     )
 
+    cur.execute(
+        """
+            CREATE TABLE IF NOT EXISTS
+            classes(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT
+            )
+        """
+    )
 
 def base_stats():
     basestats_page = requests.get(basestats_URL)
@@ -138,6 +150,25 @@ def base_growths():
     con.commit()
 
 
+def class_sets():
+    page = requests.get(class_URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+    classes = soup.find(string="Regular classes").find_parent(
+        "p").get_text().split(':')[1]
+    a = [re.sub('\(.+\)', '', c).strip() for c in classes.split(',')]
+    for element in a:
+        # PERF: Refactor into executemany?
+        cur.execute(
+            """
+                INSERT INTO classes(name) VALUES(?)
+            """,
+            [element]
+        )
+    con.commit()
+
+
+
 schema()
 # base_stats()
-base_growths()
+# base_growths()
+class_sets()
