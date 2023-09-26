@@ -6,6 +6,7 @@ import sqlite3
 basestats_URL = "https://serenesforest.net/awakening/characters/base-stats/main-story/"
 basegrowths_URL = "https://serenesforest.net/awakening/characters/growth-rates/base/"
 class_URL = "https://serenesforest.net/awakening/characters/class-sets/"
+class_base_URL = "https://serenesforest.net/awakening/classes/base-stats/"
 
 con = sqlite3.connect("awakening.db")
 cur = con.cursor()
@@ -74,6 +75,25 @@ def schema():
             )
         """
     )
+
+    cur.execute(
+        """
+            CREATE TABLE IF NOT EXISTS
+            classbase(
+                class TEXT,
+                hp INTEGER,
+                str INTEGER,
+                mag INTEGER,
+                skl INTEGER,
+                spd INTEGER,
+                def INTEGER,
+                res INTEGER,
+                mov INTEGER,
+                rank TEXT
+            )
+        """
+    )
+
 
 def base_stats():
     basestats_page = requests.get(basestats_URL)
@@ -167,8 +187,29 @@ def class_sets():
     con.commit()
 
 
+def class_base():
+    page = requests.get(class_base_URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+    classes = soup.find_all("tr")
+    for element in classes:
+        a = [x.get_text() for x in element.find_all("td")]
+        if (len(a) == 10):
+            cur.execute(
+                """
+                    INSERT INTO classbase
+                    VALUES(
+                        ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?
+                    )
+                """,
+                a
+            )
+
+    con.commit()
+
 
 schema()
 # base_stats()
 # base_growths()
-class_sets()
+# class_sets()
+class_base()
