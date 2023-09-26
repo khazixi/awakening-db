@@ -14,7 +14,7 @@ cur = con.cursor()
 
 def schema():
     # TODO: Refactor into one string?
-    cur.execute(
+    cur.executescript(
         """
             CREATE TABLE IF NOT EXISTS
             basestats(
@@ -30,11 +30,8 @@ def schema():
                 def INTEGER,
                 res INTEGER,
                 mov INTEGER
-            )
-        """
-    )
-    cur.execute(
-        """
+            );
+
             CREATE TABLE IF NOT EXISTS
             basegrowths(
                 name TEXT,
@@ -46,11 +43,8 @@ def schema():
                 lck INTEGER,
                 def INTEGER,
                 res INTEGER
-            )
-        """
-    )
-    cur.execute(
-        """
+            );
+
             CREATE TABLE IF NOT EXISTS
             asset(
                 asset TEXT,
@@ -62,22 +56,14 @@ def schema():
                 lck TEXT,
                 def TEXT,
                 res TEXT
-            )
-        """
-    )
+            );
 
-    cur.execute(
-        """
             CREATE TABLE IF NOT EXISTS
             classes(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT
-            )
-        """
-    )
+            );
 
-    cur.execute(
-        """
             CREATE TABLE IF NOT EXISTS
             classbase(
                 class TEXT,
@@ -90,7 +76,7 @@ def schema():
                 res INTEGER,
                 mov INTEGER,
                 rank TEXT
-            )
+            );
         """
     )
 
@@ -212,4 +198,4 @@ schema()
 # base_stats()
 # base_growths()
 # class_sets()
-class_base()
+# class_base()
