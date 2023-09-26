@@ -7,6 +7,7 @@ basestats_URL = "https://serenesforest.net/awakening/characters/base-stats/main-
 basegrowths_URL = "https://serenesforest.net/awakening/characters/growth-rates/base/"
 class_URL = "https://serenesforest.net/awakening/characters/class-sets/"
 class_base_URL = "https://serenesforest.net/awakening/classes/base-stats/"
+skills_URL = "https://serenesforest.net/awakening/miscellaneous/skills/"
 
 con = sqlite3.connect("awakening.db")
 cur = con.cursor()
@@ -77,6 +78,15 @@ def schema():
                 mov INTEGER,
                 rank TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS
+            skills(
+                skill TEXT,
+                effect TEXT,
+                activation TEXT,
+                class TEXT,
+                level INTEGER
+            )
         """
     )
 
@@ -98,11 +108,6 @@ def base_stats():
                 """,
                 b
             )
-            print(data.description)
-            for d in data:
-                print(d)
-        else:
-            print('Fucked Up')
     con.commit()
 
 
@@ -194,8 +199,28 @@ def class_base():
     con.commit()
 
 
+def class_skills():
+    page = requests.get(skills_URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+    classes = soup.find("table").find_all("tr")
+    for element in classes:
+        a = [x.get_text() for x in element.find_all("td")]
+        if (len(a) == 5):
+            cur.execute(
+                """
+                        INSERT INTO skills
+                        VALUES(
+                            ?, ?, ?, ?, ?
+                        )
+                    """,
+                a
+            )
+    con.commit()
+
+
 schema()
-# base_stats()
-# base_growths()
-# class_sets()
-# class_base()
+base_stats()
+base_growths()
+class_sets()
+class_base()
+class_skills()
