@@ -8,6 +8,7 @@ basegrowths_URL = "https://serenesforest.net/awakening/characters/growth-rates/b
 class_URL = "https://serenesforest.net/awakening/characters/class-sets/"
 class_base_URL = "https://serenesforest.net/awakening/classes/base-stats/"
 skills_URL = "https://serenesforest.net/awakening/miscellaneous/skills/"
+character_assets_URL = "https://serenesforest.net/awakening/characters/maximum-stats/modifiers/"
 
 con = sqlite3.connect("awakening.db")
 cur = con.cursor()
@@ -86,7 +87,19 @@ def schema():
                 activation TEXT,
                 class TEXT,
                 level INTEGER
-            )
+            );
+
+            CREATE TABLE IF NOT EXISTS
+            character_assets(
+                name TEXT,
+                str INTEGER,
+                mag INTEGER,
+                skl INTEGER,
+                spd INTEGER,
+                lck INTEGER,
+                def INTEGER,
+                res INTEGER
+            );
         """
     )
 
@@ -208,11 +221,30 @@ def class_skills():
         if (len(a) == 5):
             cur.execute(
                 """
-                        INSERT INTO skills
-                        VALUES(
-                            ?, ?, ?, ?, ?
-                        )
-                    """,
+                    INSERT INTO skills
+                    VALUES(
+                        ?, ?, ?, ?, ?
+                    )
+                """,
+                a
+            )
+    con.commit()
+
+def character_assets():
+    page = requests.get(character_assets_URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+    parent_assets = soup.find(string="Chrom").find_parent("table").find_all("tr")
+    for element in parent_assets:
+        a = [x.get_text() for x in element.find_all("td")]
+        if (len(a) == 8):
+            cur.execute(
+                """
+                    INSERT INTO character_assets
+                    VALUES(
+                        ?, ?, ?, ?,
+                        ?, ?, ?, ?
+                    )
+                """,
                 a
             )
     con.commit()
@@ -224,3 +256,4 @@ base_growths()
 class_sets()
 class_base()
 class_skills()
+character_assets()
