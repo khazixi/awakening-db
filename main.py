@@ -57,7 +57,9 @@ def schema():
                 spd TEXT,
                 lck TEXT,
                 def TEXT,
-                res TEXT
+                res TEXT,
+                affinity INT,
+                growth INT
             );
 
             CREATE TABLE IF NOT EXISTS
@@ -124,6 +126,29 @@ def base_stats():
     con.commit()
 
 
+def split_affinity(c: list[str]) -> tuple[list[str], list[str]]:
+    asset = []
+    flaw = []
+    p1 = re.compile(r"\+\/-(\d{1,2})")
+    p2 = re.compile(r"\+?(\d{1,2})\/(-\d{1,2})")
+    for string in c:
+        m1 = p1.match(string)
+        m2 = p2.match(string)
+        if (m1 and m1.lastindex == 1):
+            v = m1.group(1)
+            asset.append(v)
+            flaw.append(v)
+        elif (m2 and m2.lastindex == 2):
+            a, f = m2.groups()
+            asset.append(a)
+            flaw.append(f)
+        else:
+            asset.append(string)
+            flaw.append(string)
+    return (asset, flaw)
+
+
+# TODO: Change assets to strings instead of numbers
 def base_growths():
     basegrowths_page = requests.get(basegrowths_URL)
     soup = BeautifulSoup(basegrowths_page.content, "html.parser")
@@ -131,16 +156,30 @@ def base_growths():
     for element in b:
         c = [x.get_text() for x in element.find_all("td")]
         if (len(c) == 9):
+            d, e = split_affinity(c)
             cur.execute(
                 """
                     INSERT INTO asset VALUES(
                         ?, ?, ?,
                         ?, ?, ?,
-                        ?, ?, ?
+                        ?, ?, ?,
+                        1, 1
                     )
                 """,
-                c
+                d
             )
+            cur.execute(
+                """
+                    INSERT INTO asset VALUES(
+                        ?, ?, ?,
+                        ?, ?, ?,
+                        ?, ?, ?,
+                        0, 1
+                    )
+                """,
+                e
+            )
+
 
     d = soup.find(string="Chrom").find_parent("table").find_all("tr")
     for element in d:
@@ -230,6 +269,7 @@ def class_skills():
             )
     con.commit()
 
+# TODO: Change assets to strings instead of numbers
 def character_assets():
     page = requests.get(character_assets_URL)
     soup = BeautifulSoup(page.content, "html.parser")
