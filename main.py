@@ -152,7 +152,7 @@ def split_affinity(c: list[str]) -> tuple[list[str], list[str]]:
 def base_growths():
     basegrowths_page = requests.get(basegrowths_URL)
     soup = BeautifulSoup(basegrowths_page.content, "html.parser")
-    b = soup.find(string="Asset/Flaw").find_parent("table").find_all("tr")
+    b = soup.find(string="Magic").find_parent("table").find_all("tr")
     for element in b:
         c = [x.get_text() for x in element.find_all("td")]
         if (len(c) == 9):
@@ -269,10 +269,40 @@ def class_skills():
             )
     con.commit()
 
+
 # TODO: Change assets to strings instead of numbers
 def character_assets():
     page = requests.get(character_assets_URL)
     soup = BeautifulSoup(page.content, "html.parser")
+    classes = soup.find(string="Magic").find_parent("table").find_all("tr")
+    for element in classes:
+        c = [x.get_text().replace(" ", "") for x in element.find_all("td")]
+        print(c)
+        if (len(c) == 8):
+            d, e = split_affinity(c)
+            cur.execute(
+                """
+                    INSERT INTO asset VALUES(
+                        ?, 0, ?,
+                        ?, ?, ?,
+                        ?, ?, ?,
+                        1, 0
+                    )
+                """,
+                d
+            )
+            cur.execute(
+                """
+                    INSERT INTO asset VALUES(
+                        ?, 0, ?,
+                        ?, ?, ?,
+                        ?, ?, ?,
+                        0, 0
+                    )
+                """,
+                e
+            )
+
     parent_assets = soup.find(string="Chrom").find_parent("table").find_all("tr")
     for element in parent_assets:
         a = [x.get_text() for x in element.find_all("td")]
@@ -291,9 +321,9 @@ def character_assets():
 
 
 schema()
-base_stats()
-base_growths()
-class_sets()
-class_base()
-class_skills()
+# base_stats()
+# base_growths()
+# class_sets()
+# class_base()
+# class_skills()
 character_assets()
