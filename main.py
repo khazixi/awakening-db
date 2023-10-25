@@ -3,8 +3,10 @@ from typing import Callable
 import re
 import requests
 import sqlite3
-import pytermgui as ptg
 import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
+# from textual.app import App
+# from textual.widgets import Label, Button
 
 
 # NOTE:
@@ -18,13 +20,14 @@ import os
 # TODO: Add ability to check off features wanted for creating database?
 # TODO: Add parameterization of connection and cursor to Functions?
 
-
 basestats_URL = "https://serenesforest.net/awakening/characters/base-stats/main-story/"
 basegrowths_URL = "https://serenesforest.net/awakening/characters/growth-rates/base/"
 class_URL = "https://serenesforest.net/awakening/characters/class-sets/"
 class_base_URL = "https://serenesforest.net/awakening/classes/base-stats/"
 skills_URL = "https://serenesforest.net/awakening/miscellaneous/skills/"
 character_assets_URL = "https://serenesforest.net/awakening/characters/maximum-stats/modifiers/"
+
+count = 0
 
 # TODO: Make these parameters so that the db can be created as a script
 # con = sqlite3.connect("awakening.db")
@@ -292,7 +295,6 @@ def character_assets(cur: sqlite3.Cursor, con: sqlite3.Connection):
     classes = soup.find(string="Magic").find_parent("table").find_all("tr")
     for element in classes:
         c = [x.get_text().replace(" ", "") for x in element.find_all("td")]
-        print(c)
         if (len(c) == 8):
             d, e = split_affinity(c)
             cur.execute(
@@ -349,6 +351,7 @@ actions: list[Callable] = []
 
 
 def toggle_function(fn: Callable):
+    global actions_label
     if fn in actions:
         actions.remove(fn)
     else:
@@ -362,7 +365,7 @@ def get_file():
         return "Create DB"
 
 
-def runner(x):
+def runner(_):
     try:
         file = open("awakening.db", "x")
         file.close()
@@ -380,61 +383,82 @@ def runner(x):
     exit(0)
 
 
-with ptg.WindowManager() as manager:
-    window = (
-        ptg.Window(
-            "",
-            ptg.Splitter(
-                ptg.Label("Base Stats"),
-                ptg.Checkbox(
-                    tates=("X", "O"),
-                    checked=toggle_function(base_stats)
-                )
-            ),
-            ptg.Splitter(
-                ptg.Label("Base Growths"),
-                ptg.Checkbox(
-                    states=("X", "O"),
-                    checked=toggle_function(base_growths)
-                )
-            ),
-            ptg.Splitter(
-                ptg.Label("Class Sets"),
-                ptg.Checkbox(
-                    states=("X", "O"),
-                    checked=toggle_function(class_sets)
-                )
-            ),
-            ptg.Splitter(
-                ptg.Label("Class Base"),
-                ptg.Checkbox(
-                    states=("X", "O"),
-                    checked=toggle_function(class_base)
-                )
-            ),
-            ptg.Splitter(
-                ptg.Label("Class Skills"),
-                ptg.Checkbox(
-                    states=("X", "O"),
-                    checked=toggle_function(class_skills)
-                )
-            ),
-            ptg.Splitter(
-                ptg.Label("Character Assetts"),
-                ptg.Checkbox(
-                    states=("X", "O"),
-                    checked=toggle_function(character_assets)
-                )
-            ),
-            ptg.Label(""),
-            ptg.Label(""),
-            ptg.Button(
-                get_file(),
-                onclick=runner,
-            ),
-        )
-        .set_title("[210 bold]Fire Emblem Awakening Database Generator")
-        .center()
-    )
+html = """
+<!DOCTYPE html>
+<html>
+  <head>
+    <title> Awakening DB </title>
+  </head>
+  <body>
+    <h1>Awakening DB</h1>
+    <form method="POST">
+      <label for="basestats"> Base Stats </label>
+      <input type="checkbox" name="basestats" id="basestats">
+      <br>
+      <label for="basegrowths"> Base Growths </label>
+      <input type="checkbox" name="basegrowths" id="basegrowths">
+      <br>
+      <label for="classsets"> Class Sets </label>
+      <input type="checkbox" name="classsets" id="classsets">
+      <br>
+      <label for="classbase"> Class Base </label>
+      <input type="checkbox" name="classbase" id="classbase">
+      <br>
+      <label for="classskills"> Class Skills </label>
+      <input type="checkbox" name="classskills" id="classskills">
+      <br>
+      <label for="characterassets"> Character Assets </label>
+      <input type="checkbox" name="characterassets" id="characterassets">
+      <br>
+      <button type="submit"> Submit </button>
+    </form>
+  </body>
+</html>
+"""
 
-    manager.add(window)
+def activateMethods(b: list[str]):
+    con = sqlite3.connect("awakening.db")
+    cur = con.cursor()
+
+    schema(cur, con)
+    for line in b:
+        if 'basestats' in line and 'on' in line:
+            base_stats(cur, con)
+        elif 'basegrowths' in line and 'on' in line:
+            base_growths(cur, con)
+        elif 'classsets' in line and 'on' in line:
+            class_sets(cur, con)
+        elif 'classbase' in line and 'on' in line:
+            class_base(cur, con)
+        elif 'classskills' in line and 'on' in line:
+            class_skills(cur, con)
+        elif 'characterassets' in line and 'on' in line:
+            character_assets(cur, con)
+
+
+class Server(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # TODO: Return HTML HERE
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+        self.wfile.write(bytes(html, "UTF-8"))
+        return
+
+    def do_POST(self):
+        # TODO: Handle Form Data Here
+        content_length = int(self.headers['Content-Length'])
+        post_data_bytes = self.rfile.read(content_length)
+        formdata: list[str] = str(post_data_bytes, 'UTF-8').split('&')
+        activateMethods(formdata)
+        return
+
+
+if __name__ == "__main__":
+    httpd = HTTPServer(('localhost', 8080), Server)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
