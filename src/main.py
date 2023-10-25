@@ -1,22 +1,11 @@
-from bs4 import BeautifulSoup
-from typing import Callable
 import re
-import requests
 import sqlite3
-import os
+import requests
+
 from http.server import HTTPServer, BaseHTTPRequestHandler
-
-
-# NOTE:
-# using pytermgui for a terminal gui
-# (I have no idea how I would make this a text-base cli)
-# using click for arg parsing (There should not be too much)?
-
-# TODO: investigate packaging solutions for this script?
+from bs4 import BeautifulSoup
 
 # TODO: Add colorful prompts to make it a proper CLI?
-# TODO: Add ability to check off features wanted for creating database?
-# TODO: Add parameterization of connection and cursor to Functions?
 
 basestats_URL = "https://serenesforest.net/awakening/characters/base-stats/main-story/"
 basegrowths_URL = "https://serenesforest.net/awakening/characters/growth-rates/base/"
@@ -24,12 +13,6 @@ class_URL = "https://serenesforest.net/awakening/characters/class-sets/"
 class_base_URL = "https://serenesforest.net/awakening/classes/base-stats/"
 skills_URL = "https://serenesforest.net/awakening/miscellaneous/skills/"
 character_assets_URL = "https://serenesforest.net/awakening/characters/maximum-stats/modifiers/"
-
-count = 0
-
-# TODO: Make these parameters so that the db can be created as a script
-# con = sqlite3.connect("awakening.db")
-# cur = con.cursor()
 
 
 def schema(cur: sqlite3.Cursor, con: sqlite3.Connection):
@@ -336,51 +319,6 @@ def character_assets(cur: sqlite3.Cursor, con: sqlite3.Connection):
     con.commit()
 
 
-# schema()
-# base_stats()
-# base_growths()
-# class_sets()
-# class_base()
-# class_skills()
-# character_assets()
-
-# INFO: Doing this because I don't know how to do pass by reference in Python
-actions: list[Callable] = []
-
-
-def toggle_function(fn: Callable):
-    global actions_label
-    if fn in actions:
-        actions.remove(fn)
-    else:
-        actions.append(fn)
-
-
-def get_file():
-    if os.path.isfile("awakening.db"):
-        return "Modify DB"
-    else:
-        return "Create DB"
-
-
-def runner(_):
-    try:
-        file = open("awakening.db", "x")
-        file.close()
-    except FileExistsError:
-        pass
-
-    con = sqlite3.connect("awakening.db")
-    cur = con.cursor()
-
-    schema(cur, con)
-
-    for action in actions:
-        action(cur, con)
-
-    exit(0)
-
-
 html = """
 <!DOCTYPE html>
 <html>
@@ -414,6 +352,7 @@ html = """
 </html>
 """
 
+
 def activateMethods(b: list[str]):
     con = sqlite3.connect("awakening.db")
     cur = con.cursor()
@@ -436,7 +375,6 @@ def activateMethods(b: list[str]):
 
 class Server(BaseHTTPRequestHandler):
     def do_GET(self):
-        # TODO: Return HTML HERE
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
@@ -445,7 +383,6 @@ class Server(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
-        # TODO: Handle Form Data Here
         content_length = int(self.headers['Content-Length'])
         post_data_bytes = self.rfile.read(content_length)
         formdata: list[str] = str(post_data_bytes, 'UTF-8').split('&')
