@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from typing import Callable
 import re
+import sys
 import requests
 import sqlite3
 import pytermgui as ptg
@@ -36,7 +37,7 @@ def schema(cur: sqlite3.Cursor, con: sqlite3.Connection):
         """
             CREATE TABLE IF NOT EXISTS
             basestats(
-                name TEXT,
+                name TEXT UNIQUE,
                 class TEXT,
                 level INTEGER,
                 hp INTEGER,
@@ -52,7 +53,7 @@ def schema(cur: sqlite3.Cursor, con: sqlite3.Connection):
 
             CREATE TABLE IF NOT EXISTS
             basegrowths(
-                name TEXT,
+                name TEXT UNIQUE,
                 hp INTEGER,
                 str INTEGER,
                 mag INTEGER,
@@ -81,12 +82,12 @@ def schema(cur: sqlite3.Cursor, con: sqlite3.Connection):
             CREATE TABLE IF NOT EXISTS
             classes(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT
+                name TEXT UNIQUE
             );
 
             CREATE TABLE IF NOT EXISTS
             classbase(
-                class TEXT,
+                class TEXT UNIQUE,
                 hp INTEGER,
                 str INTEGER,
                 mag INTEGER,
@@ -100,7 +101,7 @@ def schema(cur: sqlite3.Cursor, con: sqlite3.Connection):
 
             CREATE TABLE IF NOT EXISTS
             skills(
-                skill TEXT,
+                skill TEXT UNIQUE,
                 effect TEXT,
                 activation TEXT,
                 class TEXT,
@@ -109,7 +110,7 @@ def schema(cur: sqlite3.Cursor, con: sqlite3.Connection):
 
             CREATE TABLE IF NOT EXISTS
             character_assets(
-                name TEXT,
+                name TEXT UNIQUE,
                 str INTEGER,
                 mag INTEGER,
                 skl INTEGER,
@@ -362,7 +363,10 @@ def get_file():
         return "Create DB"
 
 
-def runner(x):
+manager = ptg.WindowManager()
+
+
+def runner(x: ptg.Button):
     try:
         file = open("awakening.db", "x")
         file.close()
@@ -377,13 +381,17 @@ def runner(x):
     for action in actions:
         action(cur, con)
 
-    exit(0)
+    manager.stop()
+    sys.exit()
 
 
-with ptg.WindowManager() as manager:
+with manager:
     window = (
         ptg.Window(
             "",
+            ptg.Label("HI"),
+            ptg.Label(','.join(actions)),
+            ptg.Label(str(len(actions))),
             ptg.Splitter(
                 ptg.Label("Base Stats"),
                 ptg.Checkbox(
