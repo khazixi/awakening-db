@@ -11,7 +11,7 @@ description="Tool making a Fire Emblem Awakening Database with all the data you 
 readme="README.md"
 requires-python=">=3.7"
 license = {text = "MIT"}
-version="0.0.1"
+version="0.1.0"
 dependencies=[
   "requests",
   "bs4",
