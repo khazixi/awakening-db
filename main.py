@@ -5,8 +5,6 @@ import requests
 import sqlite3
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
-# from textual.app import App
-# from textual.widgets import Label, Button
 
 
 # NOTE:
@@ -451,12 +449,23 @@ class Server(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         post_data_bytes = self.rfile.read(content_length)
         formdata: list[str] = str(post_data_bytes, 'UTF-8').split('&')
-        activateMethods(formdata)
-        return
+        try:
+            activateMethods(formdata)
+            self.send_response(201)
+            self.send_header()
+            self.end_headers()
+            return
+        except sqlite3.Error:
+            self.send_response(500)
+            self.send_header()
+            self.end_headers()
+            return
 
 
 if __name__ == "__main__":
     httpd = HTTPServer(('localhost', 8080), Server)
+    print("Go to http://localhost:8080")
+    print("Press Ctrl+C to close out the server")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
