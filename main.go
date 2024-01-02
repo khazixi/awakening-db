@@ -93,6 +93,29 @@ func scrape_growth_rates() {
 	c.Visit(basegrowths_URL)
 }
 
+func scrape_class_sets() {
+  c := colly.NewCollector()
+
+  c.OnHTML("body", func(h *colly.HTMLElement) {
+    h.ForEach("table", func(i int, h *colly.HTMLElement) {
+      if i < 2 {
+        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+          row := make([]string, 0)
+          h.ForEach("td", func(i int, h *colly.HTMLElement) {
+            if h.Text == "–" {
+              return
+            }
+            row = append(row, h.Text)
+          })
+          fmt.Println(row)
+        })
+      }
+    })
+  })
+
+	c.Visit(class_URL)
+}
+
 func main() {
 	os.Create(db_name)
 	// db, err := sql.Open("sqlite3", db_name)
@@ -103,8 +126,9 @@ func main() {
 	// 	fmt.Println("Failed to Print Value")
 	// }
 
-	go scrape_base_stats()
-	go scrape_growth_rates()
+	// go scrape_base_stats()
+	// go scrape_growth_rates()
+  scrape_class_sets()
 
 	// db.Exec(schema)
 }
