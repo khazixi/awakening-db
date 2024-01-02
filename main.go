@@ -116,6 +116,73 @@ func scrape_class_sets() {
 	c.Visit(class_URL)
 }
 
+func scrape_base_class() {
+  c := colly.NewCollector()
+
+  c.OnHTML("tr", func(h *colly.HTMLElement) {
+    row := make([]string, 0)
+    h.ForEach("td", func(i int, h *colly.HTMLElement) {
+      row = append(row, h.Text)
+    })
+    fmt.Println(row)
+  })
+
+  c.Visit(class_base_URL)
+}
+
+func scrape_skills() {
+  c := colly.NewCollector()
+
+  c.OnHTML("tr", func(h *colly.HTMLElement) {
+    row := make([]string, 0)
+    h.ForEach("td", func(i int, h *colly.HTMLElement) {
+      if i == 0 {
+        return
+      }
+      row = append(row, h.Text)
+    })
+    fmt.Println(row)
+  })
+
+  c.Visit(skills_URL)
+}
+
+func scrape_char_assets() {
+  c := colly.NewCollector()
+
+  c.OnHTML("body", func(h *colly.HTMLElement) {
+    h.ForEach("table", func(i int, h *colly.HTMLElement) {
+      if i == 1 {
+        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+          row := make([]string, 0)
+          h.ForEach("td", func(i int, h *colly.HTMLElement) {
+            row = append(row, h.Text)
+          })
+          fmt.Println(row)
+        })
+      } else if i == 3 {
+        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+          row := make([]string, 0)
+          h.ForEach("td", func(i int, h *colly.HTMLElement) {
+            row = append(row, h.Text)
+          })
+          fmt.Println(row)
+        })
+      } else if i > 4 {
+        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+          row := make([]string, 0)
+          h.ForEach("td", func(i int, h *colly.HTMLElement) {
+            row = append(row, h.Text)
+          })
+          fmt.Println(row)
+        })
+      }
+    })
+  })
+
+  c.Visit(character_assets_URL)
+}
+
 func main() {
 	os.Create(db_name)
 	// db, err := sql.Open("sqlite3", db_name)
@@ -128,7 +195,10 @@ func main() {
 
 	// go scrape_base_stats()
 	// go scrape_growth_rates()
-  scrape_class_sets()
+  // go scrape_class_sets()
+  // go scrape_base_class()
+  // go scrape_skills()
+  scrape_char_assets()
 
 	// db.Exec(schema)
 }
