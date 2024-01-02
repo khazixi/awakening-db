@@ -66,7 +66,28 @@ func scrape_growth_rates() {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
+		h.ForEach("table", func(i int, h *colly.HTMLElement) {
+			if h.Index == 3 || h.Index == 4 {
+				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+					row := make([]string, 0)
+					h.ForEach("td", func(i int, h *colly.HTMLElement) {
+						row = append(row, h.Text)
+					})
+					fmt.Println(row)
+				})
+			}
 
+			if h.Index == 1 {
+				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+					row := make([]string, 0)
+					h.ForEach("td", func(i int, h *colly.HTMLElement) {
+						row = append(row, h.Text)
+					})
+					fmt.Println(row)
+				})
+			}
+
+		})
 	})
 
 	c.Visit(basegrowths_URL)
@@ -82,6 +103,8 @@ func main() {
 	// 	fmt.Println("Failed to Print Value")
 	// }
 
-	scrape_base_stats()
+	go scrape_base_stats()
+	go scrape_growth_rates()
+
 	// db.Exec(schema)
 }
