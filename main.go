@@ -1,17 +1,14 @@
 package main
 
 import (
-	"database/sql"
-	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 
 	// tea "github.com/charmbracelet/bubbletea"
 	"github.com/gocolly/colly/v2"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-//go:embed schema.sql
 var schema string
 
 const db_name = "awakening.db"
@@ -23,44 +20,68 @@ const skills_URL = "https://serenesforest.net/awakening/miscellaneous/skills/"
 const character_assets_URL = "https://serenesforest.net/awakening/characters/maximum-stats/modifiers/"
 
 type CharacterModel struct {
-  Name string
-  Class string
-  level int32
-  hp int32
-  str int32
-  mag int32
-  skl int32
-  spd int32
-  lck int32
-  def int32
-  res int32
-  mov int32
+	Name  string
+	Class string
+	level int32
+	hp    int32
+	str   int32
+	mag   int32
+	skl   int32
+	spd   int32
+	lck   int32
+	def   int32
+	res   int32
+	mov   int32
 }
 
-func scrape_base_stats(db *sql.DB, c *colly.Collector) {
-	c.OnHTML("body", func(e *colly.HTMLElement) {
-    // characters := make([]CharacterModel, 0)
-    e.ForEach("tr", func(_ int, el * colly.HTMLElement) {
-      fmt.Println(el)
-      el.ForEach("td", func(12, ed * colly.HTMLElement) {
+// WARNING: Does not scrape difficulties well.
+// WARNING: Will need if checks to succssfully parse the data
+func scrape_base_stats() {
+	c := colly.NewCollector()
 
-      })
-    })
+	c.OnRequest(func(r *colly.Request) {
+		fmt.Println(r.URL.Hostname())
 	})
+
+	c.OnHTML("body", func(h *colly.HTMLElement) {
+		chars := make([][]string, 30)
+		h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+			row := make([]string, 0)
+			h.ForEach("td", func(i int, h *colly.HTMLElement) {
+				if i < 14 {
+					row = append(row, strings.TrimSpace(h.Text))
+				}
+			})
+			if len(row) != 0 {
+				fmt.Println(row, len(row))
+			}
+			chars = append(chars, row)
+		})
+	})
+
 	c.Visit(basestats_URL)
+}
+
+func scrape_growth_rates() {
+	c := colly.NewCollector()
+
+	c.OnHTML("body", func(h *colly.HTMLElement) {
+
+	})
+
+	c.Visit(basegrowths_URL)
 }
 
 func main() {
 	os.Create(db_name)
-	db, err := sql.Open("sqlite3", db_name)
+	// db, err := sql.Open("sqlite3", db_name)
+	//
+	// defer db.Close()
 
-	defer db.Close()
+	// if err != nil {
+	// 	fmt.Println("Failed to Print Value")
+	// }
 
-	if err != nil {
-		fmt.Println("Failed to Print Value")
-	}
-
-	c := colly.NewCollector()
-  scrape_base_stats(db, c)
+	scrape_base_stats()
 	// db.Exec(schema)
 }
