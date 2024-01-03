@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
+	// "os"
 	"strings"
 
 	// tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/gocolly/colly/v2"
 )
 
@@ -36,7 +38,7 @@ type CharacterModel struct {
 
 // WARNING: Does not scrape difficulties well.
 // WARNING: Will need if checks to succssfully parse the data
-func scrape_base_stats() {
+func scrape_base_stats(work chan struct{}) {
 	c := colly.NewCollector()
 
 	c.OnRequest(func(r *colly.Request) {
@@ -60,9 +62,10 @@ func scrape_base_stats() {
 	})
 
 	c.Visit(basestats_URL)
+  work <- struct{}{}
 }
 
-func scrape_growth_rates() {
+func scrape_growth_rates(work chan struct{}) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -91,114 +94,153 @@ func scrape_growth_rates() {
 	})
 
 	c.Visit(basegrowths_URL)
+  work <- struct{}{}
 }
 
-func scrape_class_sets() {
-  c := colly.NewCollector()
+func scrape_class_sets(work chan struct{}) {
+	c := colly.NewCollector()
 
-  c.OnHTML("body", func(h *colly.HTMLElement) {
-    h.ForEach("table", func(i int, h *colly.HTMLElement) {
-      if i < 2 {
-        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-          row := make([]string, 0)
-          h.ForEach("td", func(i int, h *colly.HTMLElement) {
-            if h.Text == "–" {
-              return
-            }
-            row = append(row, h.Text)
-          })
-          fmt.Println(row)
-        })
-      }
-    })
-  })
+	c.OnHTML("body", func(h *colly.HTMLElement) {
+		h.ForEach("table", func(i int, h *colly.HTMLElement) {
+			if i < 2 {
+				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+					row := make([]string, 0)
+					h.ForEach("td", func(i int, h *colly.HTMLElement) {
+						if h.Text == "–" {
+							return
+						}
+						row = append(row, h.Text)
+					})
+					fmt.Println(row)
+				})
+			}
+		})
+	})
 
 	c.Visit(class_URL)
+  work <- struct{}{}
 }
 
-func scrape_base_class() {
-  c := colly.NewCollector()
+func scrape_base_class(work chan struct{}) {
+	c := colly.NewCollector()
 
-  c.OnHTML("tr", func(h *colly.HTMLElement) {
-    row := make([]string, 0)
-    h.ForEach("td", func(i int, h *colly.HTMLElement) {
-      row = append(row, h.Text)
-    })
-    fmt.Println(row)
-  })
+	c.OnHTML("tr", func(h *colly.HTMLElement) {
+		row := make([]string, 0)
+		h.ForEach("td", func(i int, h *colly.HTMLElement) {
+			row = append(row, h.Text)
+		})
+		fmt.Println(row)
+	})
 
-  c.Visit(class_base_URL)
+	c.Visit(class_base_URL)
+  work <- struct{}{}
 }
 
-func scrape_skills() {
-  c := colly.NewCollector()
+func scrape_skills(work chan struct{}) {
+	c := colly.NewCollector()
 
-  c.OnHTML("tr", func(h *colly.HTMLElement) {
-    row := make([]string, 0)
-    h.ForEach("td", func(i int, h *colly.HTMLElement) {
-      if i == 0 {
-        return
-      }
-      row = append(row, h.Text)
-    })
-    fmt.Println(row)
-  })
+	c.OnHTML("tr", func(h *colly.HTMLElement) {
+		row := make([]string, 0)
+		h.ForEach("td", func(i int, h *colly.HTMLElement) {
+			if i == 0 {
+				return
+			}
+			row = append(row, h.Text)
+		})
+		fmt.Println(row)
+	})
 
-  c.Visit(skills_URL)
+	c.Visit(skills_URL)
+  work <- struct{}{}
 }
 
-func scrape_char_assets() {
-  c := colly.NewCollector()
+func scrape_char_assets(work chan struct{}) {
+	c := colly.NewCollector()
 
-  c.OnHTML("body", func(h *colly.HTMLElement) {
-    h.ForEach("table", func(i int, h *colly.HTMLElement) {
-      if i == 1 {
-        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-          row := make([]string, 0)
-          h.ForEach("td", func(i int, h *colly.HTMLElement) {
-            row = append(row, h.Text)
-          })
-          fmt.Println(row)
-        })
-      } else if i == 3 {
-        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-          row := make([]string, 0)
-          h.ForEach("td", func(i int, h *colly.HTMLElement) {
-            row = append(row, h.Text)
-          })
-          fmt.Println(row)
-        })
-      } else if i > 4 {
-        h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-          row := make([]string, 0)
-          h.ForEach("td", func(i int, h *colly.HTMLElement) {
-            row = append(row, h.Text)
-          })
-          fmt.Println(row)
-        })
-      }
-    })
-  })
+	c.OnHTML("body", func(h *colly.HTMLElement) {
+		h.ForEach("table", func(i int, h *colly.HTMLElement) {
+			if i == 1 {
+				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+					row := make([]string, 0)
+					h.ForEach("td", func(i int, h *colly.HTMLElement) {
+						row = append(row, h.Text)
+					})
+					fmt.Println(row)
+				})
+			} else if i == 3 {
+				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+					row := make([]string, 0)
+					h.ForEach("td", func(i int, h *colly.HTMLElement) {
+						row = append(row, h.Text)
+					})
+					fmt.Println(row)
+				})
+			} else if i > 4 {
+				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+					row := make([]string, 0)
+					h.ForEach("td", func(i int, h *colly.HTMLElement) {
+						row = append(row, h.Text)
+					})
+					fmt.Println(row)
+				})
+			}
+		})
+	})
 
-  c.Visit(character_assets_URL)
+	c.Visit(character_assets_URL)
+  work <- struct{}{}
 }
 
 func main() {
-	os.Create(db_name)
-	// db, err := sql.Open("sqlite3", db_name)
-	//
-	// defer db.Close()
+	options := make([]string, 0)
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("Scrape Options").
+				Options(
+					huh.NewOption("Include Base Stats", "basestats"),
+					huh.NewOption("Include Base Growths", "basegrowths"),
+					huh.NewOption("Include Class Sets", "classets"),
+					huh.NewOption("Include Class Base Stats", "classbase"),
+          huh.NewOption("Include Character Assets", "charassets"),
+          huh.NewOption("Include Character Skills", "charskills"),
+				).
+				Value(&options),
+		),
+	)
 
-	// if err != nil {
-	// 	fmt.Println("Failed to Print Value")
-	// }
+	work := make(chan struct{})
 
-	// go scrape_base_stats()
-	// go scrape_growth_rates()
-  // go scrape_class_sets()
-  // go scrape_base_class()
-  // go scrape_skills()
-  scrape_char_assets()
+	err := form.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// db.Exec(schema)
+	if len(options) == 0 {
+		fmt.Println("Decided not to scrape anything")
+	} else {
+		for _, option := range options {
+
+			switch option {
+			case "classbase":
+				go scrape_base_class(work)
+			case "classets":
+				go scrape_class_sets(work)
+			case "basestats":
+				go scrape_base_stats(work)
+			case "basegrowths":
+				go scrape_growth_rates(work)
+      case "charassets":
+        go scrape_char_assets(work)
+      case "charskills":
+        go scrape_skills(work)
+			default:
+				fmt.Println("Unknown Option", option)
+			}
+		}
+	}
+
+	for v := range work {
+		fmt.Println(v)
+	}
 }
