@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"sync"
+
 	// "os"
 	"strings"
 
@@ -38,7 +40,7 @@ type CharacterModel struct {
 
 // WARNING: Does not scrape difficulties well.
 // WARNING: Will need if checks to succssfully parse the data
-func scrape_base_stats(work chan struct{}) {
+func scrape_base_stats(wg * sync.WaitGroup) {
 	c := colly.NewCollector()
 
 	c.OnRequest(func(r *colly.Request) {
@@ -62,10 +64,11 @@ func scrape_base_stats(work chan struct{}) {
 	})
 
 	c.Visit(basestats_URL)
-  work <- struct{}{}
+	
+  wg.Done()
 }
 
-func scrape_growth_rates(work chan struct{}) {
+func scrape_growth_rates(wg * sync.WaitGroup) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -94,10 +97,11 @@ func scrape_growth_rates(work chan struct{}) {
 	})
 
 	c.Visit(basegrowths_URL)
-  work <- struct{}{}
+	
+  wg.Done()
 }
 
-func scrape_class_sets(work chan struct{}) {
+func scrape_class_sets(wg * sync.WaitGroup) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -118,10 +122,11 @@ func scrape_class_sets(work chan struct{}) {
 	})
 
 	c.Visit(class_URL)
-  work <- struct{}{}
+	
+  wg.Done()
 }
 
-func scrape_base_class(work chan struct{}) {
+func scrape_base_class(wg * sync.WaitGroup) {
 	c := colly.NewCollector()
 
 	c.OnHTML("tr", func(h *colly.HTMLElement) {
@@ -133,10 +138,11 @@ func scrape_base_class(work chan struct{}) {
 	})
 
 	c.Visit(class_base_URL)
-  work <- struct{}{}
+	
+  wg.Done()
 }
 
-func scrape_skills(work chan struct{}) {
+func scrape_skills(wg * sync.WaitGroup) {
 	c := colly.NewCollector()
 
 	c.OnHTML("tr", func(h *colly.HTMLElement) {
@@ -151,10 +157,11 @@ func scrape_skills(work chan struct{}) {
 	})
 
 	c.Visit(skills_URL)
-  work <- struct{}{}
+	
+  wg.Done()
 }
 
-func scrape_char_assets(work chan struct{}) {
+func scrape_char_assets(wg * sync.WaitGroup) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -188,59 +195,60 @@ func scrape_char_assets(work chan struct{}) {
 	})
 
 	c.Visit(character_assets_URL)
-  work <- struct{}{}
+
+  wg.Done()
 }
 
 func main() {
 	options := make([]string, 0)
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Scrape Options").
-				Options(
-					huh.NewOption("Include Base Stats", "basestats"),
-					huh.NewOption("Include Base Growths", "basegrowths"),
-					huh.NewOption("Include Class Sets", "classets"),
-					huh.NewOption("Include Class Base Stats", "classbase"),
-          huh.NewOption("Include Character Assets", "charassets"),
-          huh.NewOption("Include Character Skills", "charskills"),
-				).
-				Value(&options),
-		),
-	)
+	// work := make(chan struct{})
 
-	work := make(chan struct{})
+	form := huh.NewMultiSelect[string]().
+		Title("Scrape Options").
+		Options(
+			huh.NewOption("Include Base Stats", "basestats"),
+			huh.NewOption("Include Base Growths", "basegrowths"),
+			huh.NewOption("Include Class Sets", "classets"),
+			huh.NewOption("Include Class Base Stats", "classbase"),
+			huh.NewOption("Include Character Assets", "charassets"),
+			huh.NewOption("Include Character Skills", "charskills"),
+		).
+		Value(&options)
 
 	err := form.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
+  wg := sync.WaitGroup{}
+  wg.Add(len(options))
 
 	if len(options) == 0 {
 		fmt.Println("Decided not to scrape anything")
 	} else {
-		for _, option := range options {
 
+		for _, option := range options {
 			switch option {
 			case "classbase":
-				go scrape_base_class(work)
+				go scrape_base_class(&wg)
 			case "classets":
-				go scrape_class_sets(work)
+				go scrape_class_sets(&wg)
 			case "basestats":
-				go scrape_base_stats(work)
+				go scrape_base_stats(&wg)
 			case "basegrowths":
-				go scrape_growth_rates(work)
-      case "charassets":
-        go scrape_char_assets(work)
-      case "charskills":
-        go scrape_skills(work)
+				go scrape_growth_rates(&wg)
+			case "charassets":
+				go scrape_char_assets(&wg)
+			case "charskills":
+				go scrape_skills(&wg)
 			default:
 				fmt.Println("Unknown Option", option)
 			}
 		}
 	}
 
-	for v := range work {
-		fmt.Println(v)
-	}
+  wg.Wait()
+
+	// for v := range work {
+	// 	fmt.Println(v)
+	// }
 }
