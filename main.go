@@ -41,9 +41,6 @@ func scrape_base_stats(wg *sync.WaitGroup, db *sql.DB) {
 					row = append(row, strings.TrimSpace(h.Text))
 				}
 			})
-			// if len(row) != 0 {
-			// 	fmt.Println(row, len(row))
-			// }
 
 			if len(row) == 14 {
 				fmt.Println(row, len(row))
@@ -260,9 +257,8 @@ func scrape_char_assets(wg *sync.WaitGroup, db *sql.DB) {
 }
 
 func main() {
-	options := make([]string, 0)
+	var options []string
 	var dbName string = "awakening"
-	// work := make(chan struct{})
 
 	form := huh.NewForm(
 		huh.NewGroup(
