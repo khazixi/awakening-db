@@ -28,9 +28,19 @@ const class_base_URL = "https://serenesforest.net/awakening/classes/base-stats/"
 const skills_URL = "https://serenesforest.net/awakening/miscellaneous/skills/"
 const character_assets_URL = "https://serenesforest.net/awakening/characters/maximum-stats/modifiers/"
 
+type DBMsg struct {
+	command string
+	data    []any
+}
+
+func manager(wg *sync.WaitGroup, dbch chan DBMsg) {
+  wg.Wait()
+  close(dbch)
+}
+
 // WARNING: Does not scrape difficulties well.
 // WARNING: Will need if checks to succssfully parse the data
-func scrape_base_stats(wg *sync.WaitGroup, db *sql.DB) {
+func scrape_base_stats(wg *sync.WaitGroup, ch chan DBMsg) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -43,14 +53,9 @@ func scrape_base_stats(wg *sync.WaitGroup, db *sql.DB) {
 			})
 
 			if len(row) == 14 {
-				fmt.Println(row, len(row))
-				_, err := db.Exec(
-					`INSERT INTO basestats VALUES(
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        )`, row...)
-
-				if err != nil {
-					log.Println(err)
+				ch <- DBMsg{
+					command: `INSERT INTO basestats VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					data:    row,
 				}
 			}
 		})
@@ -61,7 +66,7 @@ func scrape_base_stats(wg *sync.WaitGroup, db *sql.DB) {
 	wg.Done()
 }
 
-func scrape_growth_rates(wg *sync.WaitGroup, db *sql.DB) {
+func scrape_growth_rates(wg *sync.WaitGroup, dbch chan DBMsg) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -74,14 +79,9 @@ func scrape_growth_rates(wg *sync.WaitGroup, db *sql.DB) {
 					})
 
 					if len(row) == 9 {
-						fmt.Println(row, len(row))
-						_, err := db.Exec(
-							`INSERT INTO basegrowths VALUES(
-                ?, ?, ?, ?, ?, ?, ?, ?, ?
-              )`, row...)
-
-						if err != nil {
-							log.Println(err)
+						dbch <- DBMsg{
+							command: `INSERT INTO basegrowths VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+							data:    row,
 						}
 					}
 				})
@@ -94,6 +94,8 @@ func scrape_growth_rates(wg *sync.WaitGroup, db *sql.DB) {
 						row = append(row, h.Text)
 					})
 					fmt.Println(row)
+
+					// TODO: I need to impliment a db command for storing this
 				})
 			}
 
@@ -105,7 +107,7 @@ func scrape_growth_rates(wg *sync.WaitGroup, db *sql.DB) {
 	wg.Done()
 }
 
-func scrape_class_sets(wg *sync.WaitGroup, db *sql.DB) {
+func scrape_class_sets(wg *sync.WaitGroup, dbch chan DBMsg) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -120,37 +122,23 @@ func scrape_class_sets(wg *sync.WaitGroup, db *sql.DB) {
 						row = append(row, h.Text)
 					})
 					if len(row) == 3 {
-						fmt.Println(row, len(row))
-						_, err := db.Exec(
-							`INSERT INTO characterclasses VALUES(
-                ?, ?, ?, ?, ?
-              )`, row[0], row[1], row[2], nil, nil)
-
-						if err != nil {
-							log.Println(err)
+						dbch <- DBMsg{
+							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, ?)`,
+							data:    []any{row[0], row[1], row[2], nil, nil},
 						}
-					} else if len(row) == 4 {
-						fmt.Println(row, len(row))
-						_, err := db.Exec(
-							`INSERT INTO characterclasses VALUES(
-                ?, ?, ?, ?, ?
-              )`, row[0], row[1], row[2], row[3], nil)
 
-						if err != nil {
-							log.Println(err)
+					} else if len(row) == 4 {
+
+						dbch <- DBMsg{
+							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, ?)`,
+							data:    []any{row[0], row[1], row[2], row[3], nil},
 						}
 					} else if len(row) == 5 {
-						fmt.Println(row, len(row))
-						_, err := db.Exec(
-							`INSERT INTO characterclasses VALUES(
-                ?, ?, ?, ?, ?
-              )`, row[0], row[1], row[2], row[3], row[4])
-
-						if err != nil {
-							log.Println(err)
+						dbch <- DBMsg{
+							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, ?)`,
+							data:    []any{row[0], row[1], row[2], row[3], row[4]},
 						}
 					}
-
 				})
 			}
 		})
@@ -161,7 +149,7 @@ func scrape_class_sets(wg *sync.WaitGroup, db *sql.DB) {
 	wg.Done()
 }
 
-func scrape_base_class(wg *sync.WaitGroup, db *sql.DB) {
+func scrape_base_class(wg *sync.WaitGroup, dbch chan DBMsg) {
 	c := colly.NewCollector()
 
 	c.OnHTML("tr", func(h *colly.HTMLElement) {
@@ -171,14 +159,9 @@ func scrape_base_class(wg *sync.WaitGroup, db *sql.DB) {
 		})
 		fmt.Println(row)
 		if len(row) == 10 {
-			fmt.Println(row, len(row))
-			_, err := db.Exec(
-				`INSERT INTO classbase VALUES(
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        )`, row...)
-
-			if err != nil {
-				log.Println(err)
+			dbch <- DBMsg{
+				command: `INSERT INTO classbase VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				data:    row,
 			}
 		}
 	})
@@ -188,7 +171,7 @@ func scrape_base_class(wg *sync.WaitGroup, db *sql.DB) {
 	wg.Done()
 }
 
-func scrape_skills(wg *sync.WaitGroup, db *sql.DB) {
+func scrape_skills(wg *sync.WaitGroup, dbch chan DBMsg) {
 	c := colly.NewCollector()
 
 	c.OnHTML("tr", func(h *colly.HTMLElement) {
@@ -202,13 +185,9 @@ func scrape_skills(wg *sync.WaitGroup, db *sql.DB) {
 
 		if len(row) == 5 {
 			fmt.Println(row, len(row))
-			_, err := db.Exec(
-				`INSERT INTO skills VALUES(
-        ?, ?, ?, ?, ?
-        )`, row...)
-
-			if err != nil {
-				log.Println(err)
+			dbch <- DBMsg{
+				command: `INSERT INTO skills VALUES(?, ?, ?, ?, ?)`,
+				data:    row,
 			}
 		}
 	})
@@ -218,7 +197,8 @@ func scrape_skills(wg *sync.WaitGroup, db *sql.DB) {
 	wg.Done()
 }
 
-func scrape_char_assets(wg *sync.WaitGroup, db *sql.DB) {
+// TODO: Implement the SQL for this function
+func scrape_char_assets(wg *sync.WaitGroup, dbch chan DBMsg) {
 	c := colly.NewCollector()
 
 	c.OnHTML("body", func(h *colly.HTMLElement) {
@@ -287,6 +267,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	dbch := make(chan DBMsg)
+
 	wg := sync.WaitGroup{}
 
 	wg.Add(len(options))
@@ -312,29 +294,33 @@ func main() {
 			log.Fatal(err)
 		}
 
+    go manager(&wg, dbch)
+
 		for _, option := range options {
 			switch option {
 			case "classbase":
-				go scrape_base_class(&wg, db)
+				go scrape_base_class(&wg, dbch)
 			case "classets":
-				go scrape_class_sets(&wg, db)
+				go scrape_class_sets(&wg, dbch)
 			case "basestats":
-				go scrape_base_stats(&wg, db)
+				go scrape_base_stats(&wg, dbch)
 			case "basegrowths":
-				go scrape_growth_rates(&wg, db)
+				go scrape_growth_rates(&wg, dbch)
 			case "charassets":
-				go scrape_char_assets(&wg, db)
+				go scrape_char_assets(&wg, dbch)
 			case "charskills":
-				go scrape_skills(&wg, db)
+				go scrape_skills(&wg, dbch)
 			default:
 				fmt.Println("Unknown Option", option)
 			}
 		}
+
+		for dbmsg := range dbch {
+			_, err := db.Exec(dbmsg.command, dbmsg.data...)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
 	}
-
-	wg.Wait()
-
-	// for v := range work {
-	// 	fmt.Println(v)
-	// }
 }
