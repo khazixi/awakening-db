@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -93,7 +92,6 @@ func scrape_growth_rates(wg *sync.WaitGroup, dbch chan DBMsg) {
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
-					fmt.Println(row)
 
 					// TODO: I need to impliment a db command for storing this
 				})
@@ -123,20 +121,20 @@ func scrape_class_sets(wg *sync.WaitGroup, dbch chan DBMsg) {
 					})
 					if len(row) == 3 {
 						dbch <- DBMsg{
-							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, ?)`,
-							data:    []any{row[0], row[1], row[2], nil, nil},
+							command: `INSERT INTO characterclasses VALUES(?, ?, ?, null, null)`,
+							data:    row,
 						}
 
 					} else if len(row) == 4 {
 
 						dbch <- DBMsg{
-							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, ?)`,
-							data:    []any{row[0], row[1], row[2], row[3], nil},
+							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, null)`,
+							data:    row,
 						}
 					} else if len(row) == 5 {
 						dbch <- DBMsg{
 							command: `INSERT INTO characterclasses VALUES(?, ?, ?, ?, ?)`,
-							data:    []any{row[0], row[1], row[2], row[3], row[4]},
+							data:    row,
 						}
 					}
 				})
@@ -157,7 +155,6 @@ func scrape_base_class(wg *sync.WaitGroup, dbch chan DBMsg) {
 		h.ForEach("td", func(i int, h *colly.HTMLElement) {
 			row = append(row, h.Text)
 		})
-		fmt.Println(row)
 		if len(row) == 10 {
 			dbch <- DBMsg{
 				command: `INSERT INTO classbase VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -184,7 +181,6 @@ func scrape_skills(wg *sync.WaitGroup, dbch chan DBMsg) {
 		})
 
 		if len(row) == 5 {
-			fmt.Println(row, len(row))
 			dbch <- DBMsg{
 				command: `INSERT INTO skills VALUES(?, ?, ?, ?, ?)`,
 				data:    row,
@@ -209,7 +205,6 @@ func scrape_char_assets(wg *sync.WaitGroup, dbch chan DBMsg) {
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
-					fmt.Println(row)
 				})
 			} else if i == 3 {
 				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
@@ -217,7 +212,6 @@ func scrape_char_assets(wg *sync.WaitGroup, dbch chan DBMsg) {
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
-					fmt.Println(row)
 				})
 			} else if i > 4 {
 				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
@@ -225,7 +219,6 @@ func scrape_char_assets(wg *sync.WaitGroup, dbch chan DBMsg) {
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
-					fmt.Println(row)
 				})
 			}
 		})
@@ -273,10 +266,8 @@ func main() {
 
 	wg.Add(len(options))
 
-	fmt.Println(dbName)
 
 	if len(options) == 0 {
-		fmt.Println("Decided not to scrape anything")
 	} else {
 		file, err := os.Create(dbName + ".db")
 		if err != nil {
@@ -310,8 +301,6 @@ func main() {
 				go scrape_char_assets(&wg, dbch)
 			case "charskills":
 				go scrape_skills(&wg, dbch)
-			default:
-				fmt.Println("Unknown Option", option)
 			}
 		}
 
