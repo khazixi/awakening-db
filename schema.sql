@@ -81,3 +81,15 @@ CREATE TABLE IF NOT EXISTS character_assets(
   def INTEGER,
   res INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS growth_rate_modifiers(
+  STAT TEXT,
+  HP TEXT,
+  STR TEXT,
+  MAG TEXT,
+  SKL TEXT,
+  SPD TEXT,
+  LCK TEXT,
+  DEF TEXT,
+  RES TEXT
+);

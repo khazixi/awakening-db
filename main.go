@@ -33,8 +33,8 @@ type DBMsg struct {
 }
 
 func manager(wg *sync.WaitGroup, dbch chan DBMsg) {
-  wg.Wait()
-  close(dbch)
+	wg.Wait()
+	close(dbch)
 }
 
 // WARNING: Does not scrape difficulties well.
@@ -88,12 +88,17 @@ func scrape_growth_rates(wg *sync.WaitGroup, dbch chan DBMsg) {
 
 			if h.Index == 1 {
 				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-					row := make([]string, 0)
+					row := make([]any, 0)
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
 
-					// TODO: I need to impliment a db command for storing this
+					if len(row) == 9 {
+						dbch <- DBMsg{
+							command: `INSERT INTO growth_rate_modifiers VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+							data:    row,
+						}
+					}
 				})
 			}
 
@@ -266,7 +271,6 @@ func main() {
 
 	wg.Add(len(options))
 
-
 	if len(options) == 0 {
 	} else {
 		file, err := os.Create(dbName + ".db")
@@ -285,7 +289,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-    go manager(&wg, dbch)
+		go manager(&wg, dbch)
 
 		for _, option := range options {
 			switch option {
@@ -307,7 +311,7 @@ func main() {
 		for dbmsg := range dbch {
 			_, err := db.Exec(dbmsg.command, dbmsg.data...)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 			}
 		}
 
