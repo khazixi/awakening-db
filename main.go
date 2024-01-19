@@ -206,24 +206,45 @@ func scrape_char_assets(wg *sync.WaitGroup, dbch chan DBMsg) {
 		h.ForEach("table", func(i int, h *colly.HTMLElement) {
 			if i == 1 {
 				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-					row := make([]string, 0)
+					row := make([]any, 0)
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
+
+					if len(row) == 8 {
+						dbch <- DBMsg{
+							command: `INSERT INTO maxstat_rate_modifiers VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+							data:    row,
+						}
+					}
 				})
 			} else if i == 3 {
 				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-					row := make([]string, 0)
+					row := make([]any, 0)
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
+
+					if len(row) == 8 {
+						dbch <- DBMsg{
+							command: `INSERT INTO character_assets VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+							data:    row,
+						}
+					}
 				})
 			} else if i > 4 {
 				h.ForEach("tr", func(i int, h *colly.HTMLElement) {
-					row := make([]string, 0)
+					row := make([]any, 0)
 					h.ForEach("td", func(i int, h *colly.HTMLElement) {
 						row = append(row, h.Text)
 					})
+
+					if len(row) == 8 {
+						dbch <- DBMsg{
+							command: `INSERT INTO character_assets VALUES(?, ?, ?, ?, ?, ?, ?, ?)`,
+							data:    row,
+						}
+					}
 				})
 			}
 		})

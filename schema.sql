@@ -93,3 +93,14 @@ CREATE TABLE IF NOT EXISTS growth_rate_modifiers(
   DEF TEXT,
   RES TEXT
 );
+
+CREATE TABLE IF NOT EXISTS maxstat_rate_modifiers(
+  STAT TEXT,
+  STR TEXT,
+  MAG TEXT,
+  SKL TEXT,
+  SPD TEXT,
+  LCK TEXT,
+  DEF TEXT,
+  RES TEXT
+);
