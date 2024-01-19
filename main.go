@@ -13,7 +13,7 @@ import (
 	// tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/gocolly/colly/v2"
-	_ "modernc.org/sqlite"
+	_ "github.com/glebarez/go-sqlite"
 )
 
 //go:embed schema.sql
@@ -198,7 +198,6 @@ func scrape_skills(wg *sync.WaitGroup, dbch chan DBMsg) {
 	wg.Done()
 }
 
-// TODO: Implement the SQL for this function
 func scrape_char_assets(wg *sync.WaitGroup, dbch chan DBMsg) {
 	c := colly.NewCollector()
 
