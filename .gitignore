@@ -25,3 +25,5 @@ awakening-db
 # Go workspace file
 go.work
 
+
+dist/
