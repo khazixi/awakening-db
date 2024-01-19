@@ -13,5 +13,5 @@ and perfomantly for other people's applications.
 
 You should be able to copy paste the database into your projects because its sqlite.
 
-The `main.py` script is provided so that you are able to generate all the correct data
+The `main.go` script is provided so that you are able to generate all the correct data
 from Serene's Forest.
